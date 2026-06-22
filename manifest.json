@@ -1,6 +1,6 @@
 {
-  "name": "PrimeTime",
-  "short_name": "PrimeTime",
+  "name": "FILMTIME",
+  "short_name": "FILMTIME",
   "description": "Watch Free Movies & TV Shows — Cinema at your fingertips",
   "start_url": "./index.html",
   "scope": "./",
