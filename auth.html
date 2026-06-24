@@ -24,15 +24,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <!-- Popunder -->
-  <script src="https://pl29153553.profitablecpmratenetwork.com/8a/40/15/8a4015d24cf577cbc17905b52ea70bff.js"></script>
 </head>
 <body class="auth-page">
 
-  <div class="ad-toggle-wrap ad-toggle-fixed">
-    <span class="ad-toggle-label">Ads</span>
-    <label class="ad-toggle"><input type="checkbox" id="ad-toggle" checked><span class="ad-toggle-slider"></span></label>
-  </div>
 
   <div class="auth-bg">
     <div class="auth-bg-gradient"></div>
@@ -189,14 +183,12 @@
         window.location.href = 'index.html';
       });
 
-      // If already logged in, redirect
-      try {
-        const auth = JSON.parse(localStorage.getItem('pt_auth') || '{}');
-        if (auth.loggedIn) window.location.href = 'profiles.html';
-      } catch(_) {}
-    })();
-  </script>
-  <!-- Social Bar -->
-  <script src="https://pl29153555.profitablecpmratenetwork.com/06/e0/51/06e0518e44fedeecc8fa72c7131b1432.js"></script>
+    // If already logged in, redirect
+    try {
+      const auth = JSON.parse(localStorage.getItem('pt_auth') || '{}');
+      if (auth.loggedIn) window.location.href = 'profiles.html';
+    } catch(_) {}
+  })();
+</script>
 </body>
 </html>
