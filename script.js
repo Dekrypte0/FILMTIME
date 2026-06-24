@@ -1,7 +1,7 @@
 /* ============================================================
-   PrimeTime — script.js
+   FILMTIME — script.js
    All JavaScript: TMDB API, Splash, Navbar, Rows, Search,
-   My List, Continue Watching, Movie/TV Detail
+   My List, Continue Watching, Movie/TV Detail, Theme Engine
    ============================================================ */
 
 "use strict";
@@ -41,12 +41,15 @@ function formatRuntime(min) {
   return h ? `${h}h ${m}m` : `${m}m`;
 }
 
-function esc(str = "") {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+function esc(str) {
+  var s = String(str);
+  return s.replace(/[&<>"]/g, function(ch) {
+    if (ch === '\x26') return '\x26amp;';
+    if (ch === '\x3C') return '\x26lt;';
+    if (ch === '\x3E') return '\x26gt;';
+    if (ch === '\x22') return '\x26quot;';
+    return ch;
+  });
 }
 
 // ── My List (localStorage, profile-aware) ───────────────────
@@ -121,6 +124,154 @@ window.addEventListener("message", function(event) {
 });
 
 // ============================================================
+//  THEME ENGINE
+//  ============================================================
+//  HOW IT WORKS:
+//  1. The CSS uses [data-theme="dark"] / [data-theme="light"] / [data-theme="cyberpunk"]
+//     attribute selectors on <html> to swap CSS variable values.
+//  2. JavaScript sets `document.documentElement.setAttribute('data-theme', themeName)`
+//     and persists the choice to localStorage.
+//  3. The custom color picker lets users override --accent-color on the fly.
+//  4. applyCustomColor() directly sets that CSS variable via:
+//     document.documentElement.style.setProperty('--accent-color', hexColor);
+//     It also updates the legacy --purple variable for backward compat.
+//  ============================================================
+
+// ── Theme Engine ─────────────────────────────────────────────
+const ThemeEngine = {
+  _key: 'ft_theme',
+  _customKey: 'ft_theme_custom',
+
+  // Get saved theme, default to 'dark'
+  getTheme() {
+    return localStorage.getItem(this._key) || 'dark';
+  },
+
+  // Apply a theme preset by name
+  applyTheme(themeName) {
+    document.documentElement.setAttribute('data-theme', themeName);
+    localStorage.setItem(this._key, themeName);
+    // If we have a custom accent saved, re-apply it after theme swap
+    const custom = this.getCustomColor();
+    if (custom) {
+      this.applyCustomColor(custom);
+    }
+    // Update UI toggle buttons if they exist
+    document.querySelectorAll('.theme-preset-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.theme === themeName);
+    });
+  },
+
+  // Get saved custom accent color
+  getCustomColor() {
+    return localStorage.getItem(this._customKey) || '';
+  },
+
+  // Apply a custom accent color on top of the current theme
+  applyCustomColor(hexColor) {
+    if (!hexColor) return;
+    document.documentElement.style.setProperty('--accent-color', hexColor);
+    // Also update legacy alias for backward compatibility
+    document.documentElement.style.setProperty('--purple', hexColor);
+    localStorage.setItem(this._customKey, hexColor);
+    // Update input[type="color"] if it exists
+    const colorInput = document.getElementById('theme-custom-color');
+    if (colorInput) colorInput.value = hexColor;
+  },
+
+  // Reset custom color back to theme default
+  resetCustomColor() {
+    localStorage.removeItem(this._customKey);
+    document.documentElement.style.removeProperty('--accent-color');
+    document.documentElement.style.removeProperty('--purple');
+    const colorInput = document.getElementById('theme-custom-color');
+    if (colorInput) colorInput.value = '';
+  },
+
+  // Initialize the theme system: inject UI, apply saved theme
+  init() {
+    // Apply saved theme immediately (prevents flash)
+    const savedTheme = this.getTheme();
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // Wait for DOM, then inject theme panel
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => this._injectUI());
+    } else {
+      this._injectUI();
+    }
+  },
+
+  // Inject the theme panel into the DOM
+  _injectUI() {
+    // Avoid duplicating the panel
+    if (document.getElementById('ft-theme-panel')) return;
+
+    const currentTheme = this.getTheme();
+    const customColor = this.getCustomColor();
+
+    const panel = document.createElement('div');
+    panel.id = 'ft-theme-panel';
+    panel.className = 'theme-panel collapsed';
+    panel.innerHTML = `
+      <div class="theme-panel-title">🎨 Theme</div>
+      <div class="theme-preset-btns">
+        <button class="theme-preset-btn ${currentTheme === 'dark' ? 'active' : ''}" data-theme="dark">🌙 Dark</button>
+        <button class="theme-preset-btn ${currentTheme === 'light' ? 'active' : ''}" data-theme="light">☀️ Light</button>
+        <button class="theme-preset-btn ${currentTheme === 'cyberpunk' ? 'active' : ''}" data-theme="cyberpunk">💜 Cyberpunk</button>
+      </div>
+      <div class="theme-custom-row">
+        <label>Accent:</label>
+        <input type="color" id="theme-custom-color" value="${customColor || '#8B5CF6'}" />
+        <button class="theme-preset-btn" id="theme-reset-btn" style="padding:4px 8px;font-size:0.65rem;">Reset</button>
+      </div>
+    `;
+
+    // Toggle button
+    const toggle = document.createElement('button');
+    toggle.id = 'ft-theme-toggle';
+    toggle.className = 'theme-panel-toggle';
+    toggle.innerHTML = '🎨';
+    toggle.title = 'Toggle Theme Panel';
+
+    document.body.appendChild(toggle);
+    document.body.appendChild(panel);
+
+    // Toggle panel visibility
+    toggle.addEventListener('click', () => {
+      panel.classList.toggle('collapsed');
+    });
+
+    // Preset buttons
+    panel.querySelectorAll('.theme-preset-btn[data-theme]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.applyTheme(btn.dataset.theme);
+      });
+    });
+
+    // Custom color picker
+    const colorInput = document.getElementById('theme-custom-color');
+    if (colorInput) {
+      colorInput.addEventListener('input', (e) => {
+        this.applyCustomColor(e.target.value);
+        // Remove saved theme preset flag since user customized
+        // (stay on current theme but with custom accent)
+      });
+    }
+
+    // Reset custom color
+    const resetBtn = document.getElementById('theme-reset-btn');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        this.resetCustomColor();
+        // Re-apply current theme to get default accent back
+        this.applyTheme(this.getTheme());
+      });
+    }
+  }
+};
+
+// ============================================================
 //  PAGE DETECTION
 // ============================================================
 const PAGE = (() => {
@@ -133,42 +284,11 @@ const PAGE = (() => {
 })();
 
 // ============================================================
-//  AD TOGGLE
-// ============================================================
-function initAdToggle() {
-  const toggle = $("#ad-toggle");
-  if (!toggle) return;
-
-  const adsEnabled = localStorage.getItem("pt_ads_enabled") !== "false";
-  toggle.checked = adsEnabled;
-
-  if (!adsEnabled) {
-    document.body.classList.add("ads-hidden");
-  }
-
-  toggle.addEventListener("change", () => {
-    const enabled = toggle.checked;
-    localStorage.setItem("pt_ads_enabled", enabled);
-    document.body.classList.toggle("ads-hidden", !enabled);
-  });
-}
-
-// Apply ad preference immediately (before DOMContentLoaded) to prevent flash
-(function() {
-  if (localStorage.getItem("pt_ads_enabled") === "false") {
-    document.body.classList.add("ads-hidden");
-  }
-})();
-
-// ============================================================
 //  SHARED: NAVBAR
 // ============================================================
 function initNavbar() {
   const navbar = $("#navbar");
   if (!navbar) return;
-
-  // ── Ad Toggle ──
-  initAdToggle();
 
   // Scroll opacity
   if (!navbar.classList.contains("navbar-solid")) {
@@ -503,7 +623,7 @@ async function initHomePage() {
 
   // Show skeleton rows while loading
   const skeletonRows = [
-    "Trending Now", "Top Rated", "Popular on PrimeTime", "Now Playing",
+    "Trending Now", "Top Rated", "Popular on FILMTIME", "Now Playing",
     "Action", "Comedy", "Horror", "Sci-Fi"
   ];
   skeletonRows.forEach(t => {
@@ -523,7 +643,7 @@ async function initHomePage() {
   const categories = [
     { title: "Trending Now",         path: "/trending/movie/week",                  type: "movie" },
     { title: "Top Rated",            path: "/movie/top_rated",                      type: "movie" },
-    { title: "Popular on PrimeTime", path: "/movie/popular",                        type: "movie" },
+    { title: "Popular on FILMTIME", path: "/movie/popular",                        type: "movie" },
     { title: "Now Playing",          path: "/movie/now_playing",                    type: "movie" },
     { title: "Action",               path: "/discover/movie?with_genres=28",        type: "movie" },
     { title: "Comedy",               path: "/discover/movie?with_genres=35",        type: "movie" },
@@ -726,7 +846,7 @@ async function initMoviePage() {
     const movie = await tmdb(`/movie/${id}?append_to_response=credits,similar`);
 
     // Title
-    document.title = `PrimeTime — ${movie.title || "Movie"}`;
+    document.title = `FILMTIME — ${movie.title || "Movie"}`;
 
     // Backdrop
     const backdrop = movie.backdrop_path ? `${IMG_ORIG}${movie.backdrop_path}` : "";
@@ -815,7 +935,7 @@ async function initMoviePage() {
     if (sidebarShareBtn) {
       sidebarShareBtn.addEventListener("click", () => {
         if (navigator.share) {
-          navigator.share({ title: `${movie.title} — PrimeTime`, url: location.href });
+          navigator.share({ title: `${movie.title} — FILMTIME`, url: location.href });
         } else {
           navigator.clipboard.writeText(location.href).then(() => {
             sidebarShareBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Link Copied!`;
@@ -831,8 +951,8 @@ async function initMoviePage() {
     const ogTitle = document.querySelector('meta[property="og:title"]');
     const ogDesc = document.querySelector('meta[property="og:description"]');
     const ogImage = document.querySelector('meta[property="og:image"]');
-    if (ogTitle) ogTitle.content = `${movie.title} — PrimeTime`;
-    if (ogDesc) ogDesc.content = movie.overview || 'Watch free on PrimeTime';
+    if (ogTitle) ogTitle.content = `${movie.title} — FILMTIME`;
+    if (ogDesc) ogDesc.content = movie.overview || 'Watch free on FILMTIME';
     if (ogImage && movie.backdrop_path) ogImage.content = `${IMG_ORIG}${movie.backdrop_path}`;
 
     // Detail info grid
@@ -912,7 +1032,7 @@ async function initTvPage() {
   try {
     const show = await tmdb(`/tv/${id}?append_to_response=credits,similar`);
 
-    document.title = `PrimeTime — ${show.name || "TV Show"}`;
+    document.title = `FILMTIME — ${show.name || "TV Show"}`;
 
     // Backdrop
     const backdrop = show.backdrop_path ? `${IMG_ORIG}${show.backdrop_path}` : "";
@@ -1170,7 +1290,7 @@ function initSearchPage() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
-        <h3>Search PrimeTime</h3>
+        <h3>Search FILMTIME</h3>
         <p>Find movies and TV shows</p>
       </div>
     `;
@@ -1292,7 +1412,7 @@ function showPlayLoader(backdropUrl, title) {
       <div class="play-loader-backdrop" style="background-image:url(${esc(backdropUrl || '')})"></div>
       <div class="play-loader-overlay"></div>
       <div class="play-loader-content">
-        <div class="play-loader-logo">PRIMETIME</div>
+        <div class="play-loader-logo">FILMTIME</div>
         <div class="play-loader-title">${esc(title || '')}</div>
         <div class="play-loader-ring"></div>
       </div>
@@ -1827,10 +1947,10 @@ if ('serviceWorker' in navigator) {
 // ============================================================
 //  BOOT
 // ============================================================
-document.addEventListener("DOMContentLoaded", () => {
-  // Always init ad toggle (works on all pages, even without navbar)
-  initAdToggle();
+// Initialize theme engine immediately (before DOMContentLoaded to prevent flash)
+ThemeEngine.init();
 
+document.addEventListener("DOMContentLoaded", () => {
   switch (PAGE) {
     case "home":   initHomePage();   break;
     case "movie":  initMoviePage();  break;
