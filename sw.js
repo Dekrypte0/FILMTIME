@@ -1,5 +1,5 @@
-// PrimeTime Service Worker — enables PWA install
-const CACHE_NAME = 'primetime-v2';
+// FILMTIME Service Worker — enables PWA install
+const CACHE_NAME = 'filmtime-v1';
 const PRECACHE = [
   './index.html',
   './styles.css',
