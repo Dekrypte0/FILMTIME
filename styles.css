@@ -1167,7 +1167,9 @@ ul { list-style: none; }
   max-width: 800px;
   padding-top: min(56.25%, 450px);
   border-radius: var(--radius);
-  overflow: hidden;
+  /* Use overflow:clip instead of overflow:hidden so subtitles
+     inside the iframe are not clipped at the bottom edge */
+  overflow: clip;
   border: 1px solid var(--border);
   box-shadow: 0 0 20px var(--purple-glow-sm), 0 12px 40px rgba(0,0,0,0.4);
   background: #000;
@@ -1203,62 +1205,6 @@ ul { list-style: none; }
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* ============================================================
-   SUBTITLE FIX — Properly positioned subtitles
-   The Vidking iframe renders subtitles inside the player.
-   This ensures they display correctly at the bottom center.
-   ============================================================ */
-.player-container .video-subtitles,
-.player-container ::cue,
-.player-container video::-webkit-media-text-track-container,
-.player-container [class*="subtitle"],
-.player-container [class*="caption"],
-.player-container [id*="subtitle"],
-.player-container [id*="caption"] {
-  /* These selectors help style native and embedded subtitle elements */
-  position: relative;
-}
-
-/* Fix for iframe-based subtitle overlays */
-.player-container iframe {
-  /* Ensure the iframe content can properly position subtitles */
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* Subtitles wrapper overlay — for custom subtitle implementations */
-.subtitle-overlay {
-  position: absolute;
-  bottom: 60px; /* Safe above control bar */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%;
-  max-width: 700px;
-  z-index: 10;
-  pointer-events: none;
-  text-align: center;
-  padding: 0 16px;
-}
-
-.subtitle-overlay .subtitle-text {
-  display: inline-block;
-  background: rgba(0, 0, 0, 0.75);
-  color: #ffffff;
-  font-size: clamp(0.9rem, 2.5vw, 1.2rem);
-  font-weight: 500;
-  line-height: 1.5;
-  padding: 8px 16px;
-  border-radius: 6px;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
-  max-width: 100%;
-  word-wrap: break-word;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-}
 
 /* ---- Detail Info ---- */
 .detail-info {
