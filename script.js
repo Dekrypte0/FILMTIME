@@ -29,8 +29,6 @@ function _getServerIdx() {
 // Build the player with integrated server tabs (Vidking-style)
 function buildPlayer(container, type, id, season, episode) {
   const idx = _getServerIdx();
-  // We cannot use sandbox because video providers detect it and block playback to force their ads.
-  const iframeAttrs = `frameborder="0" marginwidth="0" marginheight="0" scrolling="no" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" allow="autoplay; fullscreen"`;
 
   container.innerHTML = `
     <div class="player-server-bar">
@@ -38,10 +36,27 @@ function buildPlayer(container, type, id, season, episode) {
         `<button class="player-server-tab${i === idx ? ' active' : ''}" data-idx="${i}">${s.name}</button>`
       ).join('')}
     </div>
-    <div class="player-iframe-wrap">
-      <iframe src="${type === 'tv' ? EMBED_SERVERS[idx].tvUrl(id, season, episode) : EMBED_SERVERS[idx].movieUrl(id)}" ${iframeAttrs}></iframe>
-    </div>
+    <div class="player-iframe-wrap" id="ft-iframe-wrap"></div>
   `;
+
+  const wrap = container.querySelector('#ft-iframe-wrap');
+
+  function loadIframe(index) {
+    wrap.innerHTML = '';
+    const iframe = document.createElement('iframe');
+    iframe.src = type === 'tv' ? EMBED_SERVERS[index].tvUrl(id, season, episode) : EMBED_SERVERS[index].movieUrl(id);
+    iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute('marginwidth', '0');
+    iframe.setAttribute('marginheight', '0');
+    iframe.setAttribute('scrolling', 'no');
+    iframe.setAttribute('allowfullscreen', 'true');
+    iframe.setAttribute('webkitallowfullscreen', 'true');
+    iframe.setAttribute('mozallowfullscreen', 'true');
+    iframe.setAttribute('allow', 'autoplay; fullscreen');
+    wrap.appendChild(iframe);
+  }
+
+  loadIframe(idx);
 
   container.querySelectorAll('.player-server-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -49,8 +64,7 @@ function buildPlayer(container, type, id, season, episode) {
       localStorage.setItem('ft_srv', i);
       container.querySelectorAll('.player-server-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      const wrap = container.querySelector('.player-iframe-wrap');
-      wrap.innerHTML = `<iframe src="${type === 'tv' ? EMBED_SERVERS[i].tvUrl(id, season, episode) : EMBED_SERVERS[i].movieUrl(id)}" ${iframeAttrs}></iframe>`;
+      loadIframe(i);
     });
   });
 }
