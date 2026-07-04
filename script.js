@@ -12,8 +12,48 @@ const TMDB_BASE = "https://api.themoviedb.org/3";
 const IMG_W500  = "https://image.tmdb.org/t/p/w500";
 const IMG_ORIG  = "https://image.tmdb.org/t/p/original";
 
-const VIDKING_MOVIE = (id)  => `https://www.vidking.net/embed/movie/${id}?color=8B5CF6&autoPlay=true`;
-const VIDKING_TV    = (id, s, e) => `https://www.vidking.net/embed/tv/${id}/${s}/${e}?color=8B5CF6&autoPlay=true&nextEpisode=true&episodeSelector=true`;
+// ── Embed Servers (tabs inside the player, like Vidking's layout) ─────
+const EMBED_SERVERS = [
+  { name: "Server 1", movieUrl: (id) => `https://www.vidking.net/embed/movie/${id}?color=8B5CF6&autoPlay=true`, tvUrl: (id,s,e) => `https://www.vidking.net/embed/tv/${id}/${s}/${e}?color=8B5CF6&autoPlay=true&nextEpisode=true&episodeSelector=true` },
+  { name: "Server 2", movieUrl: (id) => `https://player.videasy.net/movie/${id}`, tvUrl: (id,s,e) => `https://player.videasy.net/tv/${id}/${s}/${e}` },
+  { name: "Server 3", movieUrl: (id) => `https://vidsrc.me/embed/movie?tmdb=${id}`, tvUrl: (id,s,e) => `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}` },
+  { name: "Server 4", movieUrl: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`, tvUrl: (id,s,e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}` },
+  { name: "Server 5", movieUrl: (id) => `https://vidsrc.pm/embed/movie?tmdb=${id}`, tvUrl: (id,s,e) => `https://vidsrc.pm/embed/tv?tmdb=${id}&season=${s}&episode=${e}` },
+];
+
+function _getServerIdx() {
+  const i = parseInt(localStorage.getItem('ft_srv') || '0', 10);
+  return (i >= 0 && i < EMBED_SERVERS.length) ? i : 0;
+}
+
+// Build the player with integrated server tabs (Vidking-style)
+function buildPlayer(container, type, id, season, episode) {
+  const idx = _getServerIdx();
+  // We cannot use sandbox because video providers detect it and block playback to force their ads.
+  const iframeAttrs = `allowfullscreen allow="autoplay; fullscreen"`;
+
+  container.innerHTML = `
+    <div class="player-server-bar">
+      ${EMBED_SERVERS.map((s, i) =>
+        `<button class="player-server-tab${i === idx ? ' active' : ''}" data-idx="${i}">${s.name}</button>`
+      ).join('')}
+    </div>
+    <div class="player-iframe-wrap">
+      <iframe src="${type === 'tv' ? EMBED_SERVERS[idx].tvUrl(id, season, episode) : EMBED_SERVERS[idx].movieUrl(id)}" ${iframeAttrs}></iframe>
+    </div>
+  `;
+
+  container.querySelectorAll('.player-server-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const i = parseInt(tab.dataset.idx, 10);
+      localStorage.setItem('ft_srv', i);
+      container.querySelectorAll('.player-server-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const wrap = container.querySelector('.player-iframe-wrap');
+      wrap.innerHTML = `<iframe src="${type === 'tv' ? EMBED_SERVERS[i].tvUrl(id, season, episode) : EMBED_SERVERS[i].movieUrl(id)}" ${iframeAttrs}></iframe>`;
+    });
+  });
+}
 
 // ── Helpers ──────────────────────────────────────────────────
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
@@ -903,7 +943,7 @@ async function initMoviePage() {
     // Player
     const playerContainer = $("#player-container");
     if (playerContainer) {
-      playerContainer.innerHTML = `<iframe src="${VIDKING_MOVIE(id)}" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
+      buildPlayer(playerContainer, "movie", id);
     }
 
     // Sidebar poster
@@ -1088,7 +1128,7 @@ async function initTvPage() {
     function loadPlayer(season, episode) {
       const pc = $("#player-container");
       if (pc) {
-        pc.innerHTML = `<iframe src="${VIDKING_TV(id, season, episode)}" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
+        buildPlayer(pc, "tv", id, season, episode);
       }
       // Update URL
       const url = new URL(location.href);
