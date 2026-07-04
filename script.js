@@ -30,7 +30,7 @@ function _getServerIdx() {
 function buildPlayer(container, type, id, season, episode) {
   const idx = _getServerIdx();
   // We cannot use sandbox because video providers detect it and block playback to force their ads.
-  const iframeAttrs = `allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" allow="autoplay; fullscreen"`;
+  const iframeAttrs = `frameborder="0" marginwidth="0" marginheight="0" scrolling="no" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" allow="autoplay; fullscreen"`;
 
   container.innerHTML = `
     <div class="player-server-bar">
