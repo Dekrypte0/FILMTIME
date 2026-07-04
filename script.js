@@ -1998,4 +1998,58 @@ document.addEventListener("DOMContentLoaded", () => {
     case "search": initSearchPage(); break;
     case "swipe":  initSwipePage();  break;
   }
+
+  if (PAGE === "movie" || PAGE === "tv") {
+    checkAdBlock();
+  }
 });
+
+// ── Adblock Detector & Warning ────────────────────────────────
+function checkAdBlock() {
+  // Create a bait element that adblockers usually hide
+  const bait = document.createElement('div');
+  bait.className = 'ad-banner ads-box ad-placement';
+  bait.style.position = 'absolute';
+  bait.style.left = '-9999px';
+  bait.style.height = '10px';
+  document.body.appendChild(bait);
+
+  setTimeout(() => {
+    const isBlocked = (bait.offsetHeight === 0 || window.getComputedStyle(bait).display === 'none');
+    bait.remove();
+    
+    if (!isBlocked && !localStorage.getItem('ft_adblock_warned')) {
+      showAdblockWarning();
+    }
+  }, 500);
+}
+
+function showAdblockWarning() {
+  const modal = document.createElement('div');
+  modal.className = 'adblock-modal-overlay';
+  modal.innerHTML = `
+    <div class="adblock-modal">
+      <div class="adblock-modal-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <h2>Protect Your Experience</h2>
+      <p style="margin-bottom: 4px;">We've detected you aren't using an Ad-Blocker. For a 100% clean, ad-free experience, we highly recommend installing <strong>uBlock Origin</strong>.</p>
+      
+      <hr style="border-color: rgba(255,255,255,0.05); margin: 12px 0;">
+      
+      <h2 style="font-size: 1.1rem; color: #ccc;">Deneyiminizi Koruyun</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Reklam engelleyici (AdBlock) kullanmadığınızı fark ettik. Reklamsız ve temiz bir izleme deneyimi için <strong>uBlock Origin</strong> kurmanızı tavsiye ederiz.</p>
+      
+      <div class="adblock-modal-actions">
+        <a href="https://ublockorigin.com/" target="_blank" class="adblock-btn-primary">Get uBlock Origin (Install)</a>
+        <button class="adblock-btn-secondary" id="dismiss-adblock">Continue Anyway / Yine de Devam Et</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  document.getElementById('dismiss-adblock').addEventListener('click', () => {
+    localStorage.setItem('ft_adblock_warned', 'true');
+    modal.remove();
+  });
+}
