@@ -219,6 +219,20 @@
 
 html { scroll-behavior: smooth; }
 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto; }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
@@ -366,6 +380,14 @@ ul { list-style: none; }
   background: rgba(10, 10, 10, 0.92);
   border: 1px solid var(--border-color);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px var(--purple-glow-sm), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+#navbar.navbar-hidden {
+  transform: translateX(-50%) translateY(-80px);
+}
+
+#navbar.navbar-solid.navbar-hidden {
+  transform: translateY(-80px);
 }
 
 .nav-left {
@@ -2975,101 +2997,3 @@ ul { list-style: none; }
   }
 }
 
-/* ============================================================
-   ADBLOCK WARNING MODAL
-   ============================================================ */
-.adblock-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-.adblock-modal {
-  background: var(--bg3);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: var(--radius);
-  padding: 32px;
-  max-width: 450px;
-  width: 100%;
-  text-align: center;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(139, 92, 246, 0.1);
-  animation: slideUp 0.4s ease-out forwards;
-}
-
-.adblock-modal-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 20px;
-  background: rgba(139, 92, 246, 0.1);
-  color: var(--purple);
-  border-radius: 50%;
-}
-
-.adblock-modal h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 12px;
-  color: #fff;
-}
-
-.adblock-modal p {
-  color: var(--text);
-  line-height: 1.6;
-}
-
-.adblock-modal-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.adblock-btn-primary {
-  display: block;
-  background: var(--purple);
-  color: #fff;
-  padding: 14px 20px;
-  border-radius: 999px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.adblock-btn-primary:hover {
-  background: var(--purple-light);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px var(--purple-glow-sm);
-}
-
-.adblock-btn-secondary {
-  background: transparent;
-  color: var(--text-muted);
-  border: 1px solid var(--border);
-  padding: 12px 20px;
-  border-radius: 999px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.adblock-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(30px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
